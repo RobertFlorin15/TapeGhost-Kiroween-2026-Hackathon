@@ -1,0 +1,50 @@
+# Dependencies and package-manager caches
+node_modules/
+.npm/
+.pnpm-store/
+
+# Build output and tool caches
+/dist/
+/dist-ssr/
+coverage/
+.vite/
+.cache/
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
+
+# Generated browser-test reports and local browser downloads
+/playwright-report/
+/playwright/.cache/
+/test-results/
+/blob-report/
+
+# Local environment values; keep sanitized example templates versioned
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.local
+
+# Local hosting state and credentials
+.wrangler/
+.vercel/
+.netlify/
+/.aws/
+
+# Package-manager diagnostic logs (keep intentional evidence logs trackable)
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor and operating-system temporary files
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Intentionally tracked: .kiro/, SKILL.md, docs/, lockfiles, and test fixtures.
