@@ -22,7 +22,8 @@ This root file is a project handoff document with skill metadata. It has not bee
 - [Project plan](docs/PROJECT_PLAN.md): engineering baseline, acceptance criteria, architecture, milestones, historical sources, and competition checks. Read before changing scope or reviewing implementation.
 - [First Kiro prompt](docs/KIRO_FIRST_PROMPT.md): copy-paste handoff for the initial native spec and repository preparation. Use until that milestone is completed; thereafter follow the actual Kiro task list.
 - [Requirements review](docs/KIRO_REQUIREMENTS_REVIEW.md): current findings and the exact revision prompt; use before approving the initial requirements.
-- Read `.kiro/specs/tapeghost-mvp/` for the implementation contract. Only `requirements.md` and `.config.kiro` exist at this checkpoint; design/tasks remain pending. Read `docs/KIRO_USAGE.md` for evidence once Kiro creates it.
+- [Design review](docs/KIRO_DESIGN_REVIEW.md): current blocking findings and the exact Kiro revision prompt; read before approving design or creating implementation tasks.
+- Read `.kiro/specs/tapeghost-mvp/` for the implementation contract. Requirements, initial design, and `.config.kiro` now exist; tasks remain pending. Six steering files and `docs/KIRO_USAGE.md` also exist.
 
 ## Engineering invariants
 
@@ -81,6 +82,43 @@ Current blocker: design/tasks await owner approval of requirements.
 
 Main risks: decoder synchronization; mutually consistent but historically incorrect encoder/decoder; slow audio; browser memory growth. Competitive risks: usefulness and novelty.
 
-Owner action: review revised requirements, then approve to proceed to design. Check Help → About in Kiro IDE for the version number to record in `docs/KIRO_USAGE.md`.
+Additional environment details recorded (2026-10-31, attributed to assisting agent):
+
+- Kiro IDE: version 1.4.62 (package kiro 1.4.62-1793209285).
+- Reference device for Req 13 benchmarks: Lenovo LOQ Essential 15IRX11 (83SC), Intel Core i5-13450HX, ~14.8 GiB RAM, Ubuntu 26.04 LTS x86_64, Google Chrome 155.0.8059.84. No measurements taken yet.
+- ffprobe not found in local PATH; planned CI install on GitHub Actions ubuntu-24.04 via apt-get; unverified until a workflow runs.
+- Kiro 1.4.62 hook schema: to be verified before any hook files are created.
+- Req 13.5 corrected: missed targets must be reported; silent relaxation prohibited; target changes require a recorded design decision.
+
+Owner action: review the requirements document (linked above), then approve to proceed to design.
 
 Estimated owner effort: **5–10 minutes** for requirements review, then **20–30 minutes** for design/tasks review.
+## Verified progress — 2026-10-31, Europe/Bucharest (design phase)
+
+Stage: **M0 initial design generated; assisting-agent review found correctness blockers. Revisions required before tasks.md.**
+
+Completed this session:
+
+- Applied two requirements corrections: Req 15.9 UTF-8 bytes for "ă" (U+0103 → 0xC4 0x83, not 0xC3 0x84 "Ä"); Req 15.7 added non-zero starting phase fixture sub-case for decoder phase-independence testing.
+- Created all six steering documents under `.kiro/steering/`: product, tech, structure, dsp-correctness, testing, accessibility.
+- Created `.kiro/specs/tapeghost-mvp/design.md` (1,229 lines; passed `validate_spec_format` with no errors).
+
+Key design decisions:
+
+- Module boundary: `src/dsp/` is zero-browser-globals TypeScript, testable in Node.js. No React, no DOM, no AudioContext imports.
+- Decoder uses quadrature correlator for frequency detection; T=1.5 energy ratio threshold; bit-period-aligned window advancement during carrier acquisition.
+- Initial cancellation design uses a local flag checked per byte. Review found this ineffective because the message handler cannot set the flag during the synchronous loop; a yielding scheduler is required.
+- `filename-in-text-envelope` added as a new `TghoError` kind (Kind=0 + FL≠0 validation gap in requirements).
+- Buffer budget: ~4.2 MiB codec-owned at maximum payload, well within the 64 MiB limit.
+- Wall-clock measured via `performance.now()` inside the worker; reported in result messages.
+- WAV buffer is transferred (not copied) in both directions.
+
+Repository status: `main`, `origin/main` up to date. No application code, no commit in this session. Git initialization authorship not verified.
+
+Assisting-agent review (2026-10-31): reviewed design and steering, independently checked carrier/output arithmetic and a UTF-8 counterexample, and ran a standalone reproduction of the proposed post-acquisition symbol sampling. The reproduction failed for 26/160 sub-bit offsets at 48 kHz and 23/147 at 44.1 kHz. These are diagnostic findings, not application test results. No application implementation was added.
+
+Next: Kiro resolves `docs/KIRO_DESIGN_REVIEW.md`, especially cancellation, symbol timing, parser bounds, and buffer ownership. Then review the revision and generate `tasks.md` with M1–M5 gates. Hook schema compatibility remains pending before configuration.
+
+Owner action: paste the exact prompt in `docs/KIRO_DESIGN_REVIEW.md` into the existing Kiro spec conversation.
+
+Estimated owner effort: **2–5 minutes** for the handoff and summary review, excluding Kiro runtime and subsequent technical review.

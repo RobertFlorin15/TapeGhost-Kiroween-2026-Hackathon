@@ -31,6 +31,16 @@ coverage/
 .vercel/
 .netlify/
 /.aws/
+/.codex/
+
+# Local private keys and credential bundles
+*.key
+*.pem
+*.p12
+*.pfx
+id_rsa
+id_ecdsa
+id_ed25519
 
 # Package-manager diagnostic logs (keep intentional evidence logs trackable)
 npm-debug.log*

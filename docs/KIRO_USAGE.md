@@ -91,3 +91,125 @@ The revised file passed `validate_spec_format` with no errors.
 - `.gitignore` was created by the assisting agent, not Kiro; it has not been committed.
 - No hook files exist; the hook plan will be written after the design is approved and the Kiro hook schema for the installed version is confirmed.
 
+
+---
+
+## Environment inspection — 2026-10-31, attributed to assisting agent
+
+These findings were recorded by the assisting agent from local environment inspection, not from Kiro execution. They supplement the Session 1 log above.
+
+**Kiro IDE version:** 1.4.62, confirmed from installed application metadata and Debian package `kiro 1.4.62-1793209285`.
+
+**Reference device for performance benchmarks (Req 13):**
+- Device: Lenovo LOQ Essential 15IRX11, model 83SC
+- CPU: Intel Core i5-13450HX
+- RAM: approximately 14.8 GiB OS-visible
+- OS: Ubuntu 26.04 LTS, x86_64
+- Reference browser: Google Chrome 155.0.8059.84
+
+No performance measurements have been taken. The 2-second encode/decode targets in Req 13.1–13.2 remain pending first measurement on this device. The reference browser version and execution conditions must be re-recorded at the time benchmarks actually run.
+
+**ffprobe availability:** `ffprobe` was not found in the local PATH. The `ffprobe` verification in Req 5.5 cannot be run locally without installation. No CI workflow exists yet.
+
+**Planned CI environment (unverified, not yet executed):**
+- Runner: GitHub Actions `ubuntu-24.04`
+- `ffprobe` installation: `sudo apt-get update && sudo apt-get install -y ffmpeg` then verified with `ffprobe -version`
+- This CI setup is planned and unverified until a workflow file is created and a run completes successfully.
+
+**Hook compatibility note:** Kiro 1.4.62 hook schema compatibility must be verified before any `.kiro/hooks/` files are created. No hook configurations exist yet. The hook plan will be developed after design approval.
+
+**Step 4 — Req 13.5 fix (2026-10-31)**
+
+Corrected Req 13 criterion 5: removed the clause that allowed silently relaxing performance targets after a missed measurement. The criterion now requires reporting any exceedance and its measured value in this file, and explicitly prohibits changing a target without a recorded design decision. No other criteria were changed. File passed `validate_spec_format` with no errors.
+
+
+---
+
+## Session 2 — 2026-10-31, design phase
+
+**Kiro IDE version:** 1.4.62 (confirmed by assisting agent from Debian package metadata; see environment inspection entry above).
+
+**Repository status at session start:**
+- Branch: `main`, up to date with `origin/main` (origin present; authorship of initial git initialization not verified)
+- Modified (unstaged): `requirements.md`, `SKILL.md`, `docs/KIRO_USAGE.md`
+- `.kiro/steering/` did not exist
+
+---
+
+### Actions performed
+
+**Step 1 — Requirements corrections (Req 15.7 and 15.9)**
+
+Two targeted fixes applied to `.kiro/specs/tapeghost-mvp/requirements.md`:
+- Req 15.9: corrected UTF-8 bytes for "ă" (U+0103) from `0xC3 0x84` (which is "Ä") to `0xC4 0x83`.
+- Req 15.7: added sub-case (d) — a fixture with no leading silence and a non-zero carrier starting phase (e.g., π/4 radians) — to verify decoder phase independence. Sub-cases (a)–(c) updated to explicitly state "carrier starting phase 0 radians".
+
+File passed `validate_spec_format` with no errors after both corrections.
+
+**Step 2 — Six steering documents created**
+
+All six planned steering documents created under `.kiro/steering/`:
+
+| File | Inclusion | Contents |
+|------|-----------|----------|
+| `product.md` | auto | Purpose, competition context, MVP scope, out-of-scope list, honesty rules, round-trip gate |
+| `tech.md` | auto | Stack table, module independence rule, dependency policy, TypeScript strict mode, performance conventions, determinism, reference device |
+| `structure.md` | auto | Repository layout, naming conventions, `.kiro` tracking rule, sensitive-files policy |
+| `dsp-correctness.md` | auto | Historical basis, frozen TGHO byte-offset table, CRC-32/ISO-HDLC parameters, FSK signal parameters, WAV output format, audio duration formula, validation order (15 steps), independence rule |
+| `testing.md` | auto | Test framework, DSP testability requirement, test category/file table, PBT rules, signal independence rules, fixture rules, CRC-mismatch procedure, unsupported-profile test approach, E2E requirements, ffprobe CI plan, performance measurement policy |
+| `accessibility.md` | auto | WCAG 2.1 AA target, semantic HTML rules, keyboard operation requirements, focus indicator spec (2px, 3:1 contrast), color/modality rules, viewport (360 px), motion (prefers-reduced-motion), manual check requirement |
+
+All files use default (auto) inclusion — they are present on every Kiro context load.
+
+**Step 3 — design.md created**
+
+Kiro created `.kiro/specs/tapeghost-mvp/design.md` (1,229 lines). File passed `validate_spec_format` with no errors.
+
+Design document covers:
+
+| Section | Contents |
+|---------|----------|
+| Architecture | ASCII module boundary diagram, Mermaid data-flow diagram |
+| TypeScript types | Full discriminated union for 14+ `TghoError` kinds (incl. new `filename-in-text-envelope`), `EncodeRequest/Result`, `DecodeRequest/Result`, `WorkerRequest/Response` tagged unions, all DSP function signatures |
+| TGHO wire contract | Frozen byte-offset table, 11-step `parseEnvelope` validation order, `serializeEnvelope` build sequence |
+| CRC | Parameters, KAT (`0xCBF43926`) |
+| FSK generation | `generateBit` contract, phase continuity invariant, encoder pipeline, 44-byte WAV header layout |
+| WAV parser | Chunk-traversal algorithm (no fixed 44-byte assumption), 4 rejection conditions with exact `detail` strings |
+| Decoder algorithm | 4 stages: carrier acquisition (quadrature correlator, T=1.5, bit-period-aligned windows), start-bit search (10k limit), byte framing (LSB-first, strict stop-bit check), envelope termination |
+| 44.1 kHz | samplesPerBit=147, carrierMinBits=882, adapted phaseStep values |
+| Worker protocol | Cancellation model explanation (flag not event), transferable buffer table, progress reporting stages |
+| Testing strategy | Req→test mapping table, PBT config, independent fixture provenance format, CRC-mismatch two-path procedure, ffprobe CI skip pattern |
+| Performance | Buffer budget table (~4.2 MiB codec-owned, well within 64 MiB), wall-clock measurement via `performance.now()` in worker |
+| Accessible UI | Minimal HTML for encode/decode/waveform panels with ARIA roles, live-region politeness, keyboard numeric region selector, canvas text alternative |
+| Correctness properties | 7 properties: envelope round-trip, audio round-trip, short-payload coverage, CRC KAT, framing invertibility, error-produces-no-payload, oversized-payload rejection |
+
+**Design decision recorded:** Added `{ kind: 'filename-in-text-envelope' }` to `TghoError` union to cover the Kind=0 + Filename Length ≠ 0 case (Req 6.12), which requirements left without a named error kind. This avoids overloading `magic-mismatch` for a distinct validation failure.
+
+---
+
+### Files created or modified this session
+
+| File | Action |
+|------|--------|
+| `.kiro/specs/tapeghost-mvp/requirements.md` | Modified (Req 15.7, 15.9 corrections) |
+| `.kiro/steering/product.md` | Created |
+| `.kiro/steering/tech.md` | Created |
+| `.kiro/steering/structure.md` | Created |
+| `.kiro/steering/dsp-correctness.md` | Created |
+| `.kiro/steering/testing.md` | Created |
+| `.kiro/steering/accessibility.md` | Created |
+| `.kiro/specs/tapeghost-mvp/design.md` | Created |
+| `docs/KIRO_USAGE.md` | Modified (this entry) |
+| `SKILL.md` | Modified (progress update) |
+
+---
+
+### Not yet done (pending owner design review)
+
+- `tasks.md` — pending owner approval of design.md
+- Hook configuration — pending Kiro 1.4.62 schema verification
+- Repository scaffold (`package.json`, source tree) — M1, not started
+- No application code, tests, or builds have been executed
+- No deployment, demo video, or submission exists
+- No Git commit has been made in this session
+
