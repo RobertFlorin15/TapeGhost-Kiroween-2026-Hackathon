@@ -44,9 +44,11 @@ CRC is error detection only. It does not correct errors, encrypt data, or establ
 | Framing | 8N2: 1 start bit (0) + 8 data bits + 2 stop bits (1) |
 | Bit order | LSB-first |
 | Carrier duration (encoder) | Exactly 5 seconds = 240,000 samples |
-| Carrier minimum (decoder) | ≥3 seconds of continuous 2400 Hz before accepting data |
+| Carrier minimum (decoder) | ≥3 seconds of continuous 2400 Hz (900 bit-periods = 144,000 samples at 48 kHz; 132,300 samples at 44.1 kHz) before accepting data |
 | Amplitude | 0.75 × 32767 ≈ 24575 peak (signed 16-bit) |
 | Starting phase | 0 radians; continuous — no reset between bits or characters |
+
+> **Frequency classifier threshold**: the ratio threshold T = 1.5 is a **proposed value, pending measurement** on real fixtures at gain factors 0.25 and 1.0. It must not be presented as empirically established until measured. The classifier uses a three-way result (`'one'`, `'zero'`, `'ambiguous'`); `'ambiguous'` during data framing triggers a framing-error.
 
 ## WAV output format
 
@@ -77,9 +79,9 @@ Where 16 = fixed header (12) + CRC (4). For a maximum 1024-byte payload with 64-
 2. Parse RIFF/WAVE header chunks; do not assume a fixed 44-byte header; skip bounded unknown chunks.
 3. Verify format tag = 1, channels = 1, bit depth = 16, sample rate ∈ {44100, 48000}.
 4. Verify audio duration ≤ 60 seconds.
-5. Acquire carrier: scan for ≥3 seconds of continuous 2400 Hz.
-6. Enter data-search mode: find first valid start bit within 10,000 bit-periods after carrier acquisition.
-7. Decode 8N2 bytes; verify each stop bit strictly; any logic-zero stop bit = framing error.
+5. Acquire carrier: scan for ≥3 seconds of continuous 2400 Hz (900 bit-periods = 144,000 samples at 48 kHz; 132,300 samples at 44.1 kHz).
+6. Enter data-search mode: perform symbol alignment search — scan all `samplesPerBit` candidate offsets after the carrier end, validating each against the TGHO magic bytes (4 bytes × 11 bit-periods); the first offset that decodes `[0x54, 0x47, 0x48, 0x4F]` without a framing error establishes the symbol clock. If no candidate succeeds → sync-failure. Bounds must be checked before every correlation window.
+7. Decode 8N2 bytes via `frameByte`; verify start bit = zero, stop bits = one strictly; any `'ambiguous'` classification or logic-zero stop bit = framing error.
 8. Collect envelope bytes; verify minimum length before reading variable fields.
 9. Validate magic, version, kind, Filename Length ≤ 64, Payload Length ≤ 1024.
 10. Verify total available bytes ≥ 12 + Filename Length + Payload Length + 4 before reading.

@@ -14,12 +14,14 @@ The DSP module must run in a plain Node.js process with no browser globals. Veri
 |----------|----------|-------------|
 | Signal independence | `tests/unit/fsk.test.ts` | Encoder output verified against hand-derived values; no decoder used |
 | Envelope unit | `tests/unit/envelope.test.ts` | Serialization, parsing, CRC KAT, boundary conditions |
-| WAV structure | `tests/unit/wav.test.ts` | Header fields, chunk sizes, ffprobe verification (CI only) |
+| WAV structure | `tests/unit/wav.test.ts` | Header fields, chunk sizes, ffprobe verification (CI required; local skip with warning if absent) |
 | Decoder unit | `tests/unit/decoder.test.ts` | Carrier acquisition, framing, error categories |
 | Property-based | `tests/unit/envelope.test.ts` and separate `tests/unit/codec-audio.test.ts` | Envelope PBT and audio round-trip PBT in separate files |
 | Rejection paths | `tests/unit/errors.test.ts` | All 11+ error conditions, no crashes, no false success |
 | E2E round-trip | `tests/e2e/round-trip.spec.ts` | Playwright: fresh page session, download, reimport |
 | E2E error paths | `tests/e2e/error-paths.spec.ts` | CRC mismatch display, unsupported profile handling |
+| Worker cancellation/race | `tests/e2e/worker-cancellation.spec.ts` + `tests/unit/worker.test.ts` | Real browser worker cancel, busy response, race conditions, internal-error |
+| Buffer lifecycle | `tests/e2e/buffer-lifecycle.spec.ts` | Play/download/repeat, imported-playback-after-decode, repeat-play |
 
 ## Property-based testing rules
 
@@ -69,8 +71,8 @@ Use the single error category `unsupported-wav-profile` with a detail string ide
 ```
 sudo apt-get update && sudo apt-get install -y ffmpeg
 ```
-This is planned and unverified until a workflow file exists and a CI run completes. Mark WAV ffprobe tests as requiring the `ffprobe` binary; skip gracefully if not present in local test runs.
+This is planned and unverified until a workflow file exists and a CI run completes. Mark WAV ffprobe tests as requiring the `ffprobe` binary. In local development, skip with a visible warning if ffprobe is absent; in CI (detected via `process.env.CI`), fail the test suite if ffprobe is absent.
 
 ## Performance measurement
 
-Performance targets (2 s encode, 2 s decode, 64 MiB buffer) are goals pending measurement. Instrument codec allocations in tests (not browser memory API). Measure wall-clock from call site, not from inside the worker. A missed target must be reported in `docs/KIRO_USAGE.md`; do not silently change the requirement.
+Performance targets (2 s encode, 2 s decode, 64 MiB buffer) are goals pending measurement. Instrument codec allocations in tests (not browser memory API). Record both worker-internal (`performance.now()`) and end-to-end (caller `postMessage` to response) measurements; report worker-internal as `wallClockMs` in the response. A missed target must be reported in `docs/KIRO_USAGE.md`; do not silently change the requirement.
