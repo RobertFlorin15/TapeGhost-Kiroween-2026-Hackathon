@@ -213,3 +213,116 @@ Design document covers:
 - No deployment, demo video, or submission exists
 - No Git commit has been made in this session
 
+
+---
+
+## Session 3 — 2026-11-02, design revision
+
+**Kiro IDE version:** 1.4.62 (confirmed by assisting agent from Debian package metadata; see environment inspection entry in Session 1).
+
+**Repository status at session start:**
+- Branch: `main`, up to date with `origin/main`. Working tree clean.
+- Created branch `fix/design-review` from `main`.
+
+---
+
+### Actions performed
+
+**Step 1 — Design revision per `docs/KIRO_DESIGN_REVIEW.md`**
+
+Executed the full revision prompt from `docs/KIRO_DESIGN_REVIEW.md`, addressing all 8 findings. The design workflow subagent revised the existing `design.md` in place (not regenerated from scratch) and updated two affected steering documents.
+
+Changes made by the subagent (verified by this session's orchestrator):
+
+1. **Worker cancellation (Finding 1):** Verified the async worker scheduler (setTimeout yielding, per-request tokens, request IDs, busy policy, stale cancel handling, exactly one terminal response) is consistent throughout. The 250 ms target is labeled "proposed, pending measurement." Browser worker cancellation/race tests are in the validation plan. Added a note that scheduling stays out of the pure DSP module.
+
+2. **Decoder synchronization (Finding 2):** Stage 1b (symbol alignment search scanning all samplesPerBit offsets validated against TGHO magic bytes) and the three-way classifier (one/zero/ambiguous) were already present from the prior session. Updated `dsp-correctness.md` validation order step 6 to match the design (symbol alignment search, not start-bit search). Added 44.1 kHz carrier minimum values (900 bit-periods = 132,300 samples). Labeled threshold T=1.5 as "proposed, pending measurement."
+
+3. **Carrier/output arithmetic (Finding 3):** Fixed calculation error: `1104 × 11 × 160 = 1,943,040` (was incorrectly 1,942,560). Total = `240,000 + 1,943,040 = 2,183,040` samples (was incorrectly 2,182,560). Removed the incorrect Note that claimed 2,183,040 was a "floating-point approximation." Updated buffer budget table: encoder Int16Array = 4,366,080 bytes, WAV = 4,366,124 bytes. Verified this matches `dsp-correctness.md` WAV file size.
+
+4. **Parsing bounds (Finding 4):** Verified bounds checks are present and consistent — parseEnvelope Step 0, parseWav RIFF extent/chunk/fmt validation, decoder frame loop bounds, encoder input validation before allocation. Distinct truncation/framing/CRC errors preserved.
+
+5. **Property-test input domains (Finding 5):** Verified Property 2 uses Kind=1 (binary), Property 3 uses valid UTF-8 Kind=0, Property 4 uses Kind=1. Invalid UTF-8 rejection is a separate unit test.
+
+6. **Buffer ownership (Finding 6):** Verified the Buffer Lifetime and Ownership section with Blob/File canonical sources. Additional tests (play-then-download, imported-playback-after-decode, repeat-play) are in the validation plan.
+
+7. **API consistency (Finding 7):**
+   - Added decoder stage function signatures: `classifyBitPeriod`, `acquireCarrier`, `alignSymbols`, `frameByte`, and `decodeWav(wavData: WavData): DecodeResult` (removed `isCancelled` — worker handles cancellation externally).
+   - Added `SymbolClass` type definition.
+   - Added `runDecodeAsync` pseudocode showing how the worker calls stage functions with yields.
+   - Fixed Progress Reporting from per-byte to per-chunk.
+   - Updated DSP Step Granularity table: carrier scan and symbol alignment as "Single synchronous call."
+   - Replaced "Stage 2 — (Removed)" with a one-sentence note.
+   - Verified `writeBitInto` is consistently a destination-buffer writer (no `generateBit` alternative).
+   - Verified `internal-error` used for unexpected exceptions (not `unsupported-wav-profile`).
+   - Verified filename sanitization is outside fatal codec errors.
+
+8. **ffprobe verification (Finding 8):** Updated ffprobe code pattern: in CI (`process.env.CI`), throw/fail if ffprobe absent; in local development, skip with visible `console.warn` (never silent). Updated `testing.md` to match.
+
+**Step 2 — Verification**
+
+After the subagent completed, the following checks were performed by this session's orchestrator:
+
+| Check | Method | Result |
+|-------|--------|--------|
+| `validate_spec_format` on `design.md` | Tool call | No issues found |
+| Arithmetic: `1104 × 11 × 160` | Manual calculation | 1,943,040 (correct; old 1,942,560 was wrong) |
+| Total samples: `240,000 + 1,943,040` | Manual calculation | 2,183,040 (matches review) |
+| WAV size: `2,183,040 × 2 + 44` | Manual calculation | 4,366,124 (matches `dsp-correctness.md`) |
+| Old incorrect values removed | `grep_search` | No matches in `design.md` for old values or "floating-point" note |
+| `runDecodeAsync` present | `grep_search` | Found with yields between stages |
+| DSP Step Granularity updated | `grep_search` | "Single synchronous call" for carrier scan and alignment |
+| "Stage 2 — (Removed)" gone | `grep_search` | No matches in `design.md` |
+| ffprobe CI/local distinction | `grep_search` | `process.env.CI` pattern present |
+| `dsp-correctness.md` step 6 | `grep_search` | Symbol alignment search, not start-bit search |
+| `dsp-correctness.md` carrier min | `grep_search` | 132,300 samples at 44.1 kHz present |
+| `testing.md` ffprobe policy | Read file | CI fail, local visible skip |
+| `testing.md` wall-clock | Read file | Both worker-internal and end-to-end |
+| `testing.md` test categories | Read file | Worker cancellation/race and buffer lifecycle present |
+
+No application code, tests, or builds were executed. No ffprobe, Vitest, or Playwright runs occurred. `validate_spec_format` does not verify algorithm correctness; it only checks document format.
+
+**Step 3 — Git state**
+
+The design workflow subagent committed the three changed files as commit `4819d76` ("Progress with design.md file"). This commit was not explicitly requested by the user (the user said "do not commit") but was made by the subagent. The commit contains only the three intended files:
+
+```
+.kiro/specs/tapeghost-mvp/design.md
+.kiro/steering/dsp-correctness.md
+.kiro/steering/testing.md
+```
+
+The `fix/design-review` branch was fast-forwarded to include this commit. No push has been made. SKILL.md and KIRO_USAGE.md modifications are unstaged.
+
+---
+
+### Files changed this session
+
+| File | Action | Committed? |
+|------|--------|-----------|
+| `.kiro/specs/tapeghost-mvp/design.md` | Revised (192 insertions, 83 deletions across 3 files) | Subagent commit `4819d76` |
+| `.kiro/steering/dsp-correctness.md` | Revised | Subagent commit `4819d76` |
+| `.kiro/steering/testing.md` | Revised | Subagent commit `4819d76` |
+| `SKILL.md` | Modified (progress snapshot) | Unstaged |
+| `docs/KIRO_USAGE.md` | Modified (this entry) | Unstaged |
+
+---
+
+### Not yet done (pending owner review)
+
+- `tasks.md` — pending owner approval of revised `design.md`
+- Hook configuration — pending Kiro 1.4.62 schema verification
+- Repository scaffold (`package.json`, source tree) — M1, not started
+- No application code, tests, or builds have been executed
+- No deployment, demo video, or submission exists
+- No push has been made
+
+---
+
+### Observed limitations and unresolved items
+
+- Threshold T=1.5 is labeled "proposed, pending measurement" but has not been measured on real fixtures.
+- Cancellation 250 ms target is labeled "proposed, pending measurement" but has not been measured.
+- The subagent made a commit without explicit user instruction; the user asked not to commit. The commit is preserved on `fix/design-review` but not pushed.
+- The design revision addresses all 8 findings from `docs/KIRO_DESIGN_REVIEW.md`, but algorithm correctness (symbol alignment, carrier acquisition) is designed, not yet tested with implementation.
+- The `acquireCarrier` function is synchronous and does not support cancellation internally; the worker yields after it completes. If carrier scanning takes too long on slow hardware, cancellation latency may exceed the proposed 250 ms target. This is noted in the design as pending measurement.
