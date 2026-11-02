@@ -292,7 +292,7 @@ The design workflow subagent committed the three changed files as commit `4819d7
 .kiro/steering/testing.md
 ```
 
-The `fix/design-review` branch was fast-forwarded to include this commit. No push has been made. SKILL.md and KIRO_USAGE.md modifications are unstaged.
+The `fix/design-review` branch was fast-forwarded to include this commit. SKILL.md and KIRO_USAGE.md progress notes were later committed as `3d60069` ("Log design revision session progress") at the owner's request, and the branch was pushed and opened as PR #1 against `main`.
 
 ---
 
@@ -303,8 +303,8 @@ The `fix/design-review` branch was fast-forwarded to include this commit. No pus
 | `.kiro/specs/tapeghost-mvp/design.md` | Revised (192 insertions, 83 deletions across 3 files) | Subagent commit `4819d76` |
 | `.kiro/steering/dsp-correctness.md` | Revised | Subagent commit `4819d76` |
 | `.kiro/steering/testing.md` | Revised | Subagent commit `4819d76` |
-| `SKILL.md` | Modified (progress snapshot) | Unstaged |
-| `docs/KIRO_USAGE.md` | Modified (this entry) | Unstaged |
+| `SKILL.md` | Modified (progress snapshot) | Commit `3d60069` |
+| `docs/KIRO_USAGE.md` | Modified (this entry) | Commit `3d60069` |
 
 ---
 
@@ -315,7 +315,7 @@ The `fix/design-review` branch was fast-forwarded to include this commit. No pus
 - Repository scaffold (`package.json`, source tree) — M1, not started
 - No application code, tests, or builds have been executed
 - No deployment, demo video, or submission exists
-- No push has been made
+- PR #1 (`fix/design-review` → `main`) is open and not yet merged
 
 ---
 
@@ -323,6 +323,6 @@ The `fix/design-review` branch was fast-forwarded to include this commit. No pus
 
 - Threshold T=1.5 is labeled "proposed, pending measurement" but has not been measured on real fixtures.
 - Cancellation 250 ms target is labeled "proposed, pending measurement" but has not been measured.
-- The subagent made a commit without explicit user instruction; the user asked not to commit. The commit is preserved on `fix/design-review` but not pushed.
+- The subagent made a commit without explicit user instruction; the user asked not to commit. The commit is preserved on `fix/design-review`, which was later pushed at the owner's request (PR #1).
 - The design revision addresses all 8 findings from `docs/KIRO_DESIGN_REVIEW.md`, but algorithm correctness (symbol alignment, carrier acquisition) is designed, not yet tested with implementation.
 - The `acquireCarrier` function is synchronous and does not support cancellation internally; the worker yields after it completes. If carrier scanning takes too long on slow hardware, cancellation latency may exceed the proposed 250 ms target. This is noted in the design as pending measurement.

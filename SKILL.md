@@ -147,7 +147,7 @@ Verification:
 - `dsp-correctness.md` step 6 now describes symbol alignment search using TGHO magic bytes, not the old start-bit search.
 - `testing.md` wall-clock section now says Record both worker-internal (performance.now()) and end-to-end (caller postMessage to response) measurements.
 - No application source, tests, build, hook execution, or Kiro task execution has occurred.
-- A commit was made on branch `fix/design-review` by the design workflow subagent (commit `4819d76`, message Progress with design.md file). This was not explicitly requested by the user but contains only the three intended file changes. No push has been made.
+- A commit was made on branch `fix/design-review` by the design workflow subagent (commit `4819d76`, message Progress with design.md file). This was not explicitly requested by the user but contains only the three intended file changes. The progress notes were then committed as `3d60069`, and the branch was pushed and opened as PR #1 against `main` at the owner's request.
 
 Next: owner reviews the revised design. After approval, Kiro generates `tasks.md` with M1 to M5 gates. Hook schema compatibility remains pending before configuration.
 
