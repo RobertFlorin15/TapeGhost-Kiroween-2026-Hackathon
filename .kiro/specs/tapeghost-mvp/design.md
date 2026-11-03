@@ -271,6 +271,14 @@ export interface WavData {
 }
 ```
 
+#### Symbol Classification
+
+```typescript
+// Three-way result from the frequency classifier. Distinguishes strong signals
+// from ambiguous ones; 'ambiguous' during data framing triggers a framing-error.
+export type SymbolClass = 'one' | 'zero' | 'ambiguous';
+```
+
 #### DSP Function Signatures (no implementation)
 
 ```typescript
@@ -304,7 +312,45 @@ export function frameBitsToByte(bits: ReadonlyArray<0 | 1>): number | null;
 // Returns null if start bit ≠ 0 or either stop bit ≠ 1
 
 // src/dsp/decoder.ts
-export function decodeWav(wavData: WavData, isCancelled: () => boolean): DecodeResult;
+// All decoder stage functions are pure and synchronous; the worker handles
+// cancellation and yielding externally by calling these functions between chunks.
+
+export function classifyBitPeriod(
+  samples: Int16Array,
+  startSample: number,
+  samplesPerBit: number,
+  sampleRate: 44100 | 48000
+): SymbolClass;
+// Bounds check first: if startSample + samplesPerBit > samples.length → 'ambiguous'.
+// Quadrature correlator with two target frequencies; returns 'one', 'zero', or 'ambiguous'.
+
+export function acquireCarrier(
+  samples: Int16Array,
+  sampleRate: 44100 | 48000
+): { carrierEndSample: number } | TghoError;
+// Stage 1: coarse scan for ≥900 consecutive logic-one bit-periods of 2400 Hz.
+// Returns { carrierEndSample } on success, { kind: 'no-carrier' } on failure.
+
+export function alignSymbols(
+  samples: Int16Array,
+  carrierEndSample: number,
+  sampleRate: 44100 | 48000
+): { dataBitOffset: number } | TghoError;
+// Stage 1b: scan all samplesPerBit candidate offsets after carrierEndSample,
+// validating each against the TGHO magic bytes (0x54 0x47 0x48 0x4F).
+// Returns { dataBitOffset } on success, { kind: 'sync-failure' } on failure.
+
+export function frameByte(
+  samples: Int16Array,
+  currentOffset: number,
+  sampleRate: 44100 | 48000
+): { byte: number; nextOffset: number } | TghoError;
+// Stage 3: frame a single byte — start bit, 8 data bits (LSB-first), 2 stop bits.
+// Returns { byte, nextOffset } on success, or a TghoError ('framing-error' or 'truncation').
+
+// Full synchronous pipeline for unit testing. Calls the stages in sequence with
+// no cancellation; the worker orchestrates the stages externally for live use.
+export function decodeWav(wavData: WavData): DecodeResult;
 
 // src/dsp/errors.ts
 export function formatError(err: TghoError): string;
@@ -587,24 +633,42 @@ Do not use random WAV sample damage; it does not guarantee a CRC mismatch.
 
 ### ffprobe Test Policy
 
-WAV structure verification with `ffprobe` is a **required CI check, not an optional skip**. If `ffprobe` is not available, the test suite fails with a clear informative message.
+WAV structure verification with `ffprobe` is a **required CI check**. In CI, if `ffprobe` is not available, the test suite fails with a clear informative message. In local development, the tests skip with a **visible warning** (never silent).
 
 ```typescript
 import { execSync } from 'child_process';
 
-function requireFfprobe(): void {
-  try { execSync('ffprobe -version', { stdio: 'ignore' }); }
-  catch {
+let ffprobeAvailable = false;
+try { execSync('ffprobe -version', { stdio: 'ignore' }); ffprobeAvailable = true; }
+catch { ffprobeAvailable = false; }
+
+const isCI = process.env.CI !== undefined;
+
+beforeAll(() => {
+  if (ffprobeAvailable) return;
+  if (isCI) {
+    // CI must fail if its required ffprobe verification cannot run.
     throw new Error(
-      'ffprobe is required for WAV structure tests. Install ffmpeg: sudo apt-get install -y ffmpeg'
+      'ffprobe is required for WAV structure tests in CI. ' +
+      'Install ffmpeg: sudo apt-get install -y ffmpeg'
     );
   }
-}
+  // Local development: skip with a visible warning (not silent).
+  console.warn(
+    'ffprobe not found; skipping WAV structure verification. ' +
+    'Install ffmpeg to enable these tests, or run in CI where ffprobe is required.'
+  );
+});
 
-beforeAll(() => { requireFfprobe(); });
+// In local dev without ffprobe, skip the suite visibly (describe.skip).
+const describeFfprobe = (ffprobeAvailable || isCI) ? describe : describe.skip;
+
+describeFfprobe('ffprobe WAV verification', () => {
+  // WAV structure tests: codec = pcm_s16le, channels = 1, sample_rate = 48000
+});
 ```
 
-The `beforeAll` throws if `ffprobe` is absent, causing the entire `wav.test.ts` suite to fail with an informative message. There is **no silent skip**.
+In CI, `beforeAll` throws if `ffprobe` is absent, causing the entire `wav.test.ts` suite to fail. In local development without `ffprobe`, the tests are skipped with a console warning. There is **no silent skip**.
 
 In CI (GitHub Actions on `ubuntu-24.04`):
 
@@ -631,7 +695,7 @@ The following tests must be added to the validation plan:
 | 5 (properties) | PBT with Kind=1 for binary payloads; PBT with valid UTF-8 for Kind=0; `0xFF` byte as Kind=0 → `utf8-encoding-error` | `tests/unit/codec-audio.test.ts` + `tests/unit/envelope.test.ts` |
 | 6 (buffer) | Play then download; import then play; repeat play | `tests/e2e/buffer-lifecycle.spec.ts` |
 | 7 (internal-error) | Force unexpected exception in worker; assert `internal-error` response | `tests/unit/worker.test.ts` |
-| 8 (ffprobe) | ffprobe absent → test fails with informative message (not silent skip) | `tests/unit/wav.test.ts` |
+| 8 (ffprobe) | CI: ffprobe absent → test fails with informative message; local: ffprobe absent → visible warning + skip | `tests/unit/wav.test.ts` |
 
 ---
 
@@ -705,7 +769,9 @@ Then proceed in order (first failure returns immediately):
 
 **Carrier generation**: 1500 calls to `writeBitInto(1, phase, output, writePos, 48000)` starting with `phase = 0`, advancing `writePos` by 160 each call. This produces 240,000 samples of continuous 2400 Hz sine starting at 0 radians.
 
-#### Encoder Pipeline (with input validation and async scheduling)
+#### Encoder Pipeline (worker orchestration — scheduling stays out of the pure DSP module)
+
+The pure DSP functions (`writeBitInto`, `byteToFrameBits`, `buildWav`) are synchronous and allocation-free. The async scheduling, progress reporting, and cancellation checks below belong to the worker, not to `fsk.ts`.
 
 ```
 // Inputs validated before any allocation:
@@ -894,59 +960,22 @@ The output `coarseCarrierEndSample` may not be aligned to the true symbol clock;
 
 **Test requirement**: independent unit tests must verify that every one of the `samplesPerBit` starting offsets (0–159 at 48 kHz, 0–146 at 44.1 kHz) correctly recovers the TGHO magic bytes from a minimal synthetic fixture. This is a header-level test (44 classifications per offset), not a full audio round-trip.
 
-#### Stage 2 — (Removed)
-
-The start-bit search is subsumed into Stage 1b. The alignment search implicitly locates the first start bit as part of validating the magic bytes.
+The start-bit search from earlier design iterations is fully subsumed into Stage 1b; the alignment search implicitly locates the first start bit as part of validating the magic bytes.
 
 #### Stage 3 — Byte Framing and Symbol Sampling
 
-The decoder accumulates raw bytes by sampling 11 bit-periods per character frame, starting at `dataBitOffset`.
+The decoder recovers bytes one at a time using `frameByte`, a pure synchronous function. The worker's async scheduler calls `frameByte` in a loop (see `runDecodeAsync`), yielding every 32 bytes and checking the cancellation token between chunks. Scheduling stays out of the pure DSP module.
 
-```
-envelopeBytes = []
-currentOffset = dataBitOffset
-loop:
-  Check cancellation token; if cancelled, post cancelled and stop.
+**`frameByte(samples, currentOffset, sampleRate): { byte: number; nextOffset: number } | TghoError`**
 
-  // Bounds check: ensure all 11 bit-periods for this byte are within bounds
-  if currentOffset + 10 * samplesPerBit + samplesPerBit > sampleCount:
-    return { ok: false, error: { kind: 'truncation' } }
+1. **Bounds check**: verify `currentOffset + 10 × samplesPerBit + samplesPerBit ≤ samples.length`; if violated → `{ kind: 'truncation' }`.
+2. **Start bit**: `classifyBitPeriod(samples, currentOffset, samplesPerBit, sampleRate)` must return `'zero'`; else → `{ kind: 'framing-error' }` (an `'ambiguous'` result also triggers framing-error per the three-way classifier policy).
+3. **Data bits**: for bit = 1..8, `b = classifyBitPeriod(samples, currentOffset + bit × samplesPerBit, samplesPerBit, sampleRate)`. If `'ambiguous'` → `{ kind: 'framing-error' }`. Collect 8 bits as `1`/`0` values.
+4. **Stop bits**: both `classifyBitPeriod(samples, currentOffset + 9 × samplesPerBit, ...)` and `classifyBitPeriod(samples, currentOffset + 10 × samplesPerBit, ...)` must return `'one'`; else → `{ kind: 'framing-error' }`.
+5. **Reconstruct byte** (LSB-first): `byte = dataBits[0] | (dataBits[1]<<1) | (dataBits[2]<<2) | ... | (dataBits[7]<<7)`.
+6. **Return**: `{ byte, nextOffset: currentOffset + 11 × samplesPerBit }`.
 
-  // Sample start bit
-  startBit = classifyBitPeriod(samples, currentOffset, samplesPerBit, sampleRate)
-  if startBit != 'zero':
-    return { ok: false, error: { kind: 'framing-error' } }
-    // ('ambiguous' also triggers framing-error per three-way classifier policy)
-
-  dataBits = []
-  for bit = 1..8:
-    b = classifyBitPeriod(samples, currentOffset + bit * samplesPerBit, samplesPerBit, sampleRate)
-    if b == 'ambiguous':
-      return { ok: false, error: { kind: 'framing-error' } }
-    dataBits.push(b == 'one' ? 1 : 0)
-
-  stopBit1 = classifyBitPeriod(samples, currentOffset + 9 * samplesPerBit, samplesPerBit, sampleRate)
-  stopBit2 = classifyBitPeriod(samples, currentOffset + 10 * samplesPerBit, samplesPerBit, sampleRate)
-  if stopBit1 != 'one' or stopBit2 != 'one':
-    return { ok: false, error: { kind: 'framing-error' } }
-
-  // Reconstruct byte: LSB-first
-  byte = dataBits[0] | (dataBits[1]<<1) | ... | (dataBits[7]<<7)
-  envelopeBytes.push(byte)
-  currentOffset += 11 * samplesPerBit
-
-  // Once we have the fixed header, determine expected total length
-  if envelopeBytes.length >= 12:
-    fl = uint16LE(envelopeBytes[6..7])
-    pl = uint32LE(envelopeBytes[8..11])
-    if fl > 64: return { ok: false, error: { kind: 'filename-length-overflow', length: fl } }
-    if pl > 1024: return { ok: false, error: { kind: 'payload-length-overflow', length: pl } }
-    expectedTotal = 12 + fl + pl + 4
-    if envelopeBytes.length >= expectedTotal:
-      break  // all envelope bytes received; proceed to Stage 4
-```
-
-**Async chunks**: in the async worker scheduler, the framing loop yields after every 32 bytes.
+**Envelope accumulation** (worker orchestration, not in the pure DSP function): the worker collects bytes returned by `frameByte` into an array. Once 12 bytes are received, it reads the Filename Length (uint16LE at bytes 6–7) and Payload Length (uint32LE at bytes 8–11) to compute `expectedTotal = 12 + FL + PL + 4`. If FL > 64 → `filename-length-overflow`; if PL > 1024 → `payload-length-overflow`. The loop continues until `envelopeBytes.length ≥ expectedTotal`, then proceeds to Stage 4.
 
 #### Stage 4 — Envelope Termination and Verification
 
@@ -1066,9 +1095,9 @@ The async scheduler breaks DSP work into bounded chunks, yielding after each:
 | Phase | Chunk boundary | Yield frequency |
 |-------|---------------|-----------------|
 | Carrier generation | 100 bit-periods per chunk (15 chunks × 100 = 1500 total) | After each chunk |
-| Carrier scan | 1000 bit-periods per chunk | After each chunk |
-| Symbol alignment search | All `samplesPerBit` offsets in one chunk (44 classifications each; cheap) | After search completes |
-| Byte framing loop | Every 32 bytes | After each chunk |
+| Carrier scan | Single synchronous call (`acquireCarrier`) | After completion |
+| Symbol alignment search | Single synchronous call (`alignSymbols`) | After completion |
+| Byte framing loop | Every 32 bytes (`frameByte` calls) | After each chunk |
 | WAV assembly | Single synchronous step (≤ 4.2 MiB copy) | Once at end |
 
 ### Worker Scheduler Pseudocode
@@ -1132,7 +1161,84 @@ async function runEncodeAsync(req: WorkerEncodeRequest, token: { cancelled: bool
 }
 ```
 
-A `runDecodeAsync` function follows the same pattern, yielding after each carrier scan chunk, after the symbol alignment search, and after every 32 bytes of the framing loop.
+A `runDecodeAsync` function follows the same async-scheduler pattern, calling the stage-level DSP functions with yields and cancellation checks between each stage:
+
+```typescript
+// schematic — not implementation
+const yield_ = (): Promise<void> => new Promise(resolve => setTimeout(resolve, 0));
+
+async function runDecodeAsync(req: WorkerDecodeRequest, token: { cancelled: boolean }): Promise<void> {
+  const t0 = performance.now();
+
+  // Step 1: parse WAV (synchronous)
+  const parsed = parseWav(req.payload.wavBuffer);
+  if ('kind' in parsed) { postError(req.id, parsed); return; }
+  postProgress(req.id, 10, 'WAV parsed');
+  if (token.cancelled) { postCancelled(req.id); return; }
+  await yield_();
+
+  // Step 2: carrier acquisition (single synchronous call)
+  const carrier = acquireCarrier(parsed.samples, parsed.sampleRate);
+  if ('kind' in carrier) { postError(req.id, carrier); return; }
+  postProgress(req.id, 30, 'Carrier acquired');
+  if (token.cancelled) { postCancelled(req.id); return; }
+  await yield_();
+
+  // Step 3: symbol alignment (single synchronous call)
+  const aligned = alignSymbols(parsed.samples, carrier.carrierEndSample, parsed.sampleRate);
+  if ('kind' in aligned) { postError(req.id, aligned); return; }
+  postProgress(req.id, 35, 'Symbol clock aligned');
+  if (token.cancelled) { postCancelled(req.id); return; }
+  await yield_();
+
+  // Step 4: byte framing loop (yield every 32 bytes)
+  const envelopeBytes: number[] = [];
+  let offset = aligned.dataBitOffset;
+  let expectedTotal: number | null = null;
+
+  for (;;) {
+    const frame = frameByte(parsed.samples, offset, parsed.sampleRate);
+    if ('kind' in frame) { postError(req.id, frame); return; }
+    envelopeBytes.push(frame.byte);
+    offset = frame.nextOffset;
+
+    // Once the fixed header is received, determine expected total length
+    if (expectedTotal === null && envelopeBytes.length >= 12) {
+      const fl = envelopeBytes[6] | (envelopeBytes[7] << 8);
+      const pl = (envelopeBytes[8] | (envelopeBytes[9] << 8)
+                 | (envelopeBytes[10] << 16) | (envelopeBytes[11] << 24)) >>> 0;
+      if (fl > 64) { postError(req.id, { kind: 'filename-length-overflow', length: fl }); return; }
+      if (pl > 1024) { postError(req.id, { kind: 'payload-length-overflow', length: pl }); return; }
+      expectedTotal = 12 + fl + pl + 4;
+    }
+    if (expectedTotal !== null && envelopeBytes.length >= expectedTotal) break;
+
+    // Yield every 32 bytes
+    if (envelopeBytes.length % 32 === 0) {
+      const pct = 35 + Math.round((envelopeBytes.length / 1104) * 60);
+      postProgress(req.id, pct, `Decoding envelope (${envelopeBytes.length} bytes)`);
+      if (token.cancelled) { postCancelled(req.id); return; }
+      await yield_();
+    }
+  }
+
+  // Step 5: envelope parsing and verification (synchronous)
+  const fullEnvelope = Uint8Array.from(envelopeBytes.slice(0, expectedTotal!));
+  const result = parseEnvelope(fullEnvelope);
+  const wallClockMs = performance.now() - t0;
+  if ('kind' in result) {
+    self.postMessage(
+      { type: 'decode-result', id: req.id, result: { ok: false, error: result }, wallClockMs }
+        satisfies WorkerDecodeResultResponse);
+  } else {
+    self.postMessage(
+      { type: 'decode-result', id: req.id,
+        result: { ok: true, kind: result.kind, payloadBytes: result.payloadBytes,
+                  filenameBytes: result.filenameBytes, crcVerified: true },
+        wallClockMs } satisfies WorkerDecodeResultResponse);
+  }
+}
+```
 
 The catch block at the worker boundary converts unexpected exceptions to `internal-error`:
 
@@ -1167,16 +1273,17 @@ Decoded `payloadBytes` (≤1024 bytes) are not transferred; they are copied. Thi
 
 ### Progress Reporting
 
-The encoder posts a `WorkerProgressResponse` after completing each envelope byte:
-```
-percent = Math.round((byteIndex / totalEnvelopeBytes) * 100)
-stage = `Encoding byte ${byteIndex + 1} of ${totalEnvelopeBytes}`
-```
+The encoder posts `WorkerProgressResponse` per chunk, matching the async scheduler granularity:
 
-The decoder posts progress at three stage transitions:
+- **Carrier generation** (after each 100-bit-period chunk): `percent = Math.round((writePos / totalSamples) * 50)`, `stage = 'Generating carrier'`
+- **Data encoding** (after each 32-byte chunk): `percent = 50 + Math.round((byteStart / envelopeByteCount) * 45)`, `stage = 'Encoding bytes ${byteStart}–${end - 1} of ${envelopeByteCount}'`
+
+The decoder posts progress at stage transitions and per-chunk during framing:
+
 - After WAV parse: `{ percent: 10, stage: 'WAV parsed' }`
 - After carrier acquisition: `{ percent: 30, stage: 'Carrier acquired' }`
-- After each 10% of envelope bytes collected: `{ percent: 30 + Math.round(envelopeProgress * 70), stage: 'Decoding envelope' }`
+- After symbol alignment: `{ percent: 35, stage: 'Symbol clock aligned' }`
+- After each 32-byte framing chunk: `{ percent: 35 + Math.round((envelopeBytesCollected / 1104) * 60), stage: 'Decoding envelope (${n} bytes)' }`
 
 ---
 
@@ -1190,9 +1297,7 @@ Pre-allocate a single `Int16Array` before any sample generation:
 totalSamples = 240_000 + envelopeByteCount * 11 * 160
 ```
 
-Maximum allocation: `240_000 + 1104 * 11 * 160 = 240_000 + 1,942,560 = 2,182,560` samples × 2 bytes = **~4.2 MiB**. This is the definitive exact sample count from integer arithmetic. (The duration-formula approximation of 2,183,040 samples differs by 480 samples due to floating-point rounding and must not be used as the allocation size.)
-
-The `writeBitInto` function writes directly into the pre-allocated output buffer at the caller-specified offset; no intermediate buffers are allocated per bit-period.
+Maximum allocation: `240_000 + 1104 * 11 * 160 = 240_000 + 1,943,040 = 2,183,040` samples × 2 bytes = 4,366,080 bytes (~4.2 MiB). This is the exact integer result from integer arithmetic; it matches the duration formula (`5 + 1104 × 11 / 300 = 45.48 s` → `45.48 × 48000 = 2,183,040` samples). The `writeBitInto` function writes directly into the pre-allocated output buffer at the caller-specified offset; no intermediate buffers are allocated per bit-period.
 
 ### Decoder Buffer Strategy
 
@@ -1202,8 +1307,8 @@ Parse the WAV in-place from the transferred `ArrayBuffer` (no copy; `Int16Array`
 
 | Allocation | Maximum size | Notes |
 |---|---|---|
-| Encoder output `Int16Array` | 2,182,560 samples × 2 = 4,365,120 bytes (~4.2 MiB) | Pre-allocated once before encoding |
-| WAV `ArrayBuffer` (output) | 4,365,120 + 44 bytes header = 4,365,164 bytes | Transferred to main thread |
+| Encoder output `Int16Array` | 2,183,040 samples × 2 = 4,366,080 bytes (~4.2 MiB) | Pre-allocated once before encoding |
+| WAV `ArrayBuffer` (output) | 4,366,080 + 44 bytes header = 4,366,124 bytes | Transferred to main thread |
 | Decoder input WAV | ≤ 8 MiB | Transferred from main; no copy |
 | Decoder `Int16Array` view | ≤ 8 MiB | View over transferred buffer |
 | Envelope accumulator `Uint8Array` | 1,104 bytes | Fixed max |
@@ -1211,7 +1316,7 @@ Parse the WAV in-place from the transferred `ArrayBuffer` (no copy; `Int16Array`
 
 **Total codec-owned working buffers** (excluding input WAV and output audio): encoder `Int16Array` (~4.2 MiB) + envelope accumulator (1.1 KiB) + CRC table (1 KiB) ≈ **~4.2 MiB**, well within the 64 MiB limit.
 
-Note: the encoder output `Int16Array` (4,365,120 bytes) and the WAV `ArrayBuffer` (4,365,164 bytes) may share memory or be allocated separately depending on implementation. In either case the combined size is ~8.7 MiB, still well within the 64 MiB budget.
+Note: the encoder output `Int16Array` (4,366,080 bytes) and the WAV `ArrayBuffer` (4,366,124 bytes) may share memory or be allocated separately depending on implementation. In either case the combined size is ~8.7 MiB, still well within the 64 MiB budget.
 
 ### Wall-Clock Measurement
 

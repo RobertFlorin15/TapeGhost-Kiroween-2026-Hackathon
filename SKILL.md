@@ -122,3 +122,39 @@ Next: Kiro resolves `docs/KIRO_DESIGN_REVIEW.md`, especially cancellation, symbo
 Owner action: paste the exact prompt in `docs/KIRO_DESIGN_REVIEW.md` into the existing Kiro spec conversation.
 
 Estimated owner effort: **2–5 minutes** for the handoff and summary review, excluding Kiro runtime and subsequent technical review.
+
+## Verified progress — 2026-11-02, Europe/Bucharest (design revision)
+
+Stage: **M0 design revised per review; awaiting owner review before tasks.md.**
+
+Completed this session (2026-11-02):
+
+- Created branch `fix/design-review` from clean `main` (no local changes to preserve).
+- Executed the full revision prompt from `docs/KIRO_DESIGN_REVIEW.md`, addressing all 8 findings.
+- Revised `.kiro/specs/tapeghost-mvp/design.md` in place: fixed carrier/output arithmetic (2,183,040 samples, not 2,182,560), added decoder stage function signatures (`classifyBitPeriod`, `acquireCarrier`, `alignSymbols`, `frameByte`, `decodeWav` without `isCancelled`), added `runDecodeAsync` pseudocode, fixed progress reporting (per-chunk not per-byte), updated DSP step granularity table, replaced Stage 2 Removed with a note, updated ffprobe policy (CI fail, local visible skip), verified cancellation/properties/buffer-ownership/API-consistency fixes from the prior session were retained.
+- Updated `.kiro/steering/dsp-correctness.md`: validation order step 6 now describes symbol alignment search (not start-bit search), step 7 references `frameByte` and three-way classifier, carrier minimum now shows sample counts at both rates (144,000 / 132,300), threshold T=1.5 labeled as proposed.
+- Updated `.kiro/steering/testing.md`: ffprobe policy (CI fail, local visible skip), wall-clock measurement (both worker-internal and end-to-end), added worker cancellation/race and buffer lifecycle test categories.
+- `design.md` passed `validate_spec_format` with no errors after revision.
+
+Verification:
+
+- `validate_spec_format` on `design.md`: no issues found.
+- Arithmetic: independently verified `1104 × 11 × 160 = 1,943,040`; `240,000 + 1,943,040 = 2,183,040`; `2,183,040 × 2 = 4,366,080`; `4,366,080 + 44 = 4,366,124`. Matches `dsp-correctness.md` WAV file size.
+- Old incorrect values (2,182,560 / 1,942,560) and the floating-point approximation Note are gone from `design.md`.
+- `runDecodeAsync` pseudocode present with yields between stages.
+- DSP Step Granularity table updated: carrier scan and symbol alignment as Single synchronous call.
+- ffprobe code pattern uses `process.env.CI` to distinguish CI (throw) from local (console.warn + skip).
+- `dsp-correctness.md` step 6 now describes symbol alignment search using TGHO magic bytes, not the old start-bit search.
+- `testing.md` wall-clock section now says Record both worker-internal (performance.now()) and end-to-end (caller postMessage to response) measurements.
+- No application source, tests, build, hook execution, or Kiro task execution has occurred.
+- A commit was made on branch `fix/design-review` by the design workflow subagent (commit `4819d76`, message Progress with design.md file). This was not explicitly requested by the user but contains only the three intended file changes. The progress notes were then committed as `3d60069`, and the branch was pushed and opened as PR #1 against `main` at the owner's request.
+
+Next: owner reviews the revised design. After approval, Kiro generates `tasks.md` with M1 to M5 gates. Hook schema compatibility remains pending before configuration.
+
+Current blocker: design revision awaits owner review.
+
+Main risks: threshold T=1.5 is unmeasured; cancellation 250 ms target is unmeasured; decoder symbol alignment search correctness is designed but not yet tested with real fixtures; no application code exists.
+
+Owner action: review the revised design document and the Romanian change summary, then approve to proceed to tasks.md.
+
+Estimated owner effort: **10 to 15 minutes** for design revision review.
