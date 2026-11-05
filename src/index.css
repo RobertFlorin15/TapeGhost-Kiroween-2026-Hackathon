@@ -1,0 +1,183 @@
+/*
+ * TapeGhost — accessibility baseline stylesheet.
+ *
+ * Intentionally minimal and non-decorative. Its only job is to satisfy the
+ * accessibility requirements that the React components' structure alone cannot
+ * guarantee:
+ *   - Req 12.2 : a visible focus indicator (>= 2 CSS px, >= 3:1 contrast).
+ *   - Req 12.7 : usable at a 360 px viewport with no horizontal scroll.
+ *   - Req 12.9 / 11.5 : prefers-reduced-motion suppresses all motion.
+ *   - Color is never the sole signal (the components already pair color with
+ *     the text labels "✓ Decoded successfully" / "✗ Decode failed" and a
+ *     role="alert" warning; the rules below only reinforce legible contrast).
+ */
+
+/* Predictable box model everywhere so widths never overflow at 360 px. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* System stack — no web-font fetch, keeps the tool offline-friendly. */
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  line-height: 1.5;
+  color: #1a1a1a;
+  background: #ffffff;
+}
+
+body {
+  margin: 0;
+}
+
+/* --- Layout: centered column that collapses cleanly to 360 px. --- */
+.tg-app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.tg-panel {
+  margin: 0 0 1.5rem;
+}
+
+.tg-field {
+  margin: 0 0 0.75rem;
+}
+
+.tg-field label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+/* Inputs must never be wider than their container at 360 px. */
+input,
+textarea,
+select,
+progress,
+output {
+  max-width: 100%;
+}
+
+textarea,
+input[type='text'],
+input[type='number'] {
+  width: 100%;
+}
+
+.tg-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+/* --- Focus indicator (Req 12.2, WCAG SC 1.4.11 non-text contrast). ---
+ *
+ * #1a5fb4 on #ffffff has a contrast ratio of ~5.9:1, comfortably above the
+ * 3:1 non-text-contrast floor, and remains clearly visible against the light
+ * panels. A :focus-visible rule covers normal keyboard tabbing; the plain
+ * :focus fallback guarantees the same 2 px outline on programmatic focus (and
+ * on browsers that do not support :focus-visible), so the automated check is
+ * deterministic.
+ */
+.tg-focusable:focus,
+.tg-focusable:focus-visible {
+  outline: 2px solid #1a5fb4;
+  outline-offset: 2px;
+}
+
+/*
+ * The waveform canvas draws on a near-black (#111) background, where a dark
+ * blue outline would be hard to see. Give it a high-contrast amber outline
+ * instead: #ffd21e on #111 is ~12:1, far above 3:1.
+ */
+.tg-waveform-canvas:focus,
+.tg-waveform-canvas:focus-visible {
+  outline: 2px solid #ffd21e;
+  outline-offset: 2px;
+}
+
+/* --- Status styling: color PLUS the text label the components already render. --- */
+
+/* Warnings / errors — #b3261e on white is ~5.9:1 (well above 4.5:1 for text). */
+.tg-warning,
+.tg-outcome-error {
+  color: #b3261e;
+}
+
+/* Success — #1b5e20 on white is ~7.4:1. */
+.tg-outcome-success {
+  color: #1b5e20;
+}
+
+.tg-outcome {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+}
+
+.tg-outcome-label {
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+}
+
+.tg-decoded-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-width: 100%;
+  overflow-x: auto;
+  background: #f4f4f4;
+  padding: 0.5rem;
+}
+
+.tg-progress {
+  width: 100%;
+}
+
+/* --- Waveform: scale down with the viewport, never force horizontal scroll. --- */
+.tg-waveform {
+  max-width: 100%;
+}
+
+.tg-waveform-canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  background: #111111;
+}
+
+.tg-bits-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.tg-bits-table th,
+.tg-bits-table td {
+  border: 1px solid #cccccc;
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+}
+
+/* --- Reduced motion (Req 12.9 / Req 11.5). ---
+ * Suppress every transition/animation and instant-scroll when the user asks
+ * for reduced motion. TapeGhost has no essential motion, so this is safe.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,434 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1. Initialise project scaffold": [
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793868301270
+      },
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793868308266
+      },
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793868632769
+      }
+    ],
+    "8. DSP Node.js testability verification": [
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793868301380
+      },
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793870450738
+      },
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793870552781
+      }
+    ],
+    "9. M1 checkpoint — all encoder independent tests green": [
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793868301413
+      },
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793870557280
+      },
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793870576113
+      }
+    ],
+    "14. Rejection and error path tests (`tests/unit/errors.test.ts` — extended)": [
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793868301436
+      },
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793871424511
+      },
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793871579997
+      }
+    ],
+    "15. Wire DSP public API (`src/dsp/index.ts`)": [
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793868301461
+      },
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793871273679
+      },
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793871420404
+      }
+    ],
+    "16. M2 checkpoint — round-trip gate green": [
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793868301488
+      },
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793871584219
+      },
+      {
+        "executionId": "96dd0839-4078-4994-8164-828263e1b8eb",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793879962827
+      }
+    ],
+    "23. E2E error path tests (`tests/e2e/error-paths.spec.ts`)": [
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793868301519
+      },
+      {
+        "executionId": "9a7c3762-4cbd-44b0-9454-77e044167412",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793891107786
+      },
+      {
+        "executionId": "9a7c3762-4cbd-44b0-9454-77e044167412",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793891244412
+      }
+    ],
+    "24. M3 checkpoint — browser app working end-to-end": [
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793868301554
+      },
+      {
+        "executionId": "9a7c3762-4cbd-44b0-9454-77e044167412",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793891258158
+      },
+      {
+        "executionId": "9a7c3762-4cbd-44b0-9454-77e044167412",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793891335781
+      }
+    ],
+    "26. Worker cancellation E2E (`tests/e2e/worker-cancellation.spec.ts`)": [
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793868301576
+      },
+      {
+        "executionId": "9a7c3762-4cbd-44b0-9454-77e044167412",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793891685852
+      },
+      {
+        "executionId": "9a7c3762-4cbd-44b0-9454-77e044167412",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793891914135
+      }
+    ],
+    "27. Accessibility manual check and fixes": [
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793868301596
+      },
+      {
+        "executionId": "9a7c3762-4cbd-44b0-9454-77e044167412",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793891921693
+      },
+      {
+        "executionId": "9a7c3762-4cbd-44b0-9454-77e044167412",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793892317894
+      }
+    ],
+    "28. M4 checkpoint — performance recorded, accessibility checked": [
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793868301624
+      },
+      {
+        "executionId": "9a7c3762-4cbd-44b0-9454-77e044167412",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793892324212
+      },
+      {
+        "executionId": "9a7c3762-4cbd-44b0-9454-77e044167412",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793892397439
+      }
+    ],
+    "30. Static deployment (Cloudflare Pages or equivalent)": [
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793868301669
+      }
+    ],
+    "31. README, LICENSE, and submission materials": [
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793868301698
+      }
+    ],
+    "32. Demo video and Devpost submission": [
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793868301721
+      }
+    ],
+    "33. M5 checkpoint — submission complete": [
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793868301747
+      }
+    ],
+    "2. Implement CRC-32/ISO-HDLC (`src/dsp/crc32.ts`)": [
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793868648159
+      },
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793869143590
+      }
+    ],
+    "4. Implement 8N2 framing (`src/dsp/framing.ts`)": [
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793868651571
+      },
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793869147555
+      }
+    ],
+    "3. Implement TGHO envelope serializer (`src/dsp/envelope.ts` — serialize side)": [
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793868654895
+      },
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793869151455
+      }
+    ],
+    "5. Implement FSK encoder (`src/dsp/fsk.ts`)": [
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793869156314
+      },
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793870000322
+      }
+    ],
+    "6. Implement WAV builder (`src/dsp/wav.ts` — encode side)": [
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793869160239
+      },
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793870004190
+      }
+    ],
+    "7. Implement encoder error types and input validation (`src/dsp/errors.ts` + validation in `src/dsp/envelope.ts`)": [
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793870010903
+      },
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793870442606
+      }
+    ],
+    "10. Implement WAV parser (`src/dsp/wav.ts` — decode side)": [
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793870582544
+      },
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793870783615
+      }
+    ],
+    "11. Implement TGHO envelope parser (`src/dsp/envelope.ts` — parse side)": [
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793870586955
+      },
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793870787716
+      }
+    ],
+    "12. Implement FSK decoder (`src/dsp/decoder.ts`)": [
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793870793408
+      },
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793871265589
+      }
+    ],
+    "13. Audio round-trip PBT and independent fixture (`tests/unit/codec-audio.test.ts`)": [
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793871269549
+      },
+      {
+        "executionId": "bd84ffe8-4037-4287-b399-d28bc5edba5a",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793871416239
+      }
+    ],
+    "17. Implement async codec worker (`src/workers/codec.worker.ts`)": [
+      {
+        "executionId": "96dd0839-4078-4994-8164-828263e1b8eb",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793879983823
+      },
+      {
+        "executionId": "96dd0839-4078-4994-8164-828263e1b8eb",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793880819465
+      }
+    ],
+    "18. Implement audio playback (`src/audio/playback.ts`)": [
+      {
+        "executionId": "96dd0839-4078-4994-8164-828263e1b8eb",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793879990581
+      },
+      {
+        "executionId": "96dd0839-4078-4994-8164-828263e1b8eb",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793882283917
+      }
+    ],
+    "19. Implement React UI — encoding panel (`src/components/CassetteControls.tsx`, `src/App.tsx`)": [
+      {
+        "executionId": "96dd0839-4078-4994-8164-828263e1b8eb",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793882301860
+      },
+      {
+        "executionId": "96dd0839-4078-4994-8164-828263e1b8eb",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793883097246
+      }
+    ],
+    "20. Implement React UI — decoding panel (`src/components/StatusPanel.tsx`)": [
+      {
+        "executionId": "96dd0839-4078-4994-8164-828263e1b8eb",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793883103789
+      },
+      {
+        "executionId": "96dd0839-4078-4994-8164-828263e1b8eb",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793883278104
+      }
+    ],
+    "21. Implement waveform and bit inspector (`src/components/WaveformDisplay.tsx`, `src/components/BitInspector.tsx`)": [
+      {
+        "executionId": "96dd0839-4078-4994-8164-828263e1b8eb",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793883297317
+      },
+      {
+        "executionId": "96dd0839-4078-4994-8164-828263e1b8eb",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793883542371
+      }
+    ],
+    "22. E2E round-trip test (`tests/e2e/round-trip.spec.ts`)": [
+      {
+        "executionId": "9a7c3762-4cbd-44b0-9454-77e044167412",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793890824983
+      },
+      {
+        "executionId": "9a7c3762-4cbd-44b0-9454-77e044167412",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793890909752
+      },
+      {
+        "executionId": "9a7c3762-4cbd-44b0-9454-77e044167412",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793890917222
+      },
+      {
+        "executionId": "9a7c3762-4cbd-44b0-9454-77e044167412",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793891093210
+      }
+    ],
+    "25. Measure and record performance on reference device": [
+      {
+        "executionId": "9a7c3762-4cbd-44b0-9454-77e044167412",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793891344341
+      },
+      {
+        "executionId": "9a7c3762-4cbd-44b0-9454-77e044167412",
+        "chatSessionId": "sess_fa91f3d7-6576-40d6-b63a-94bb1783426c",
+        "timestamp": 1793891677888
+      }
+    ]
+  }
+}

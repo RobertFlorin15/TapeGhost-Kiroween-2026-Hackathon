@@ -326,3 +326,123 @@ The `fix/design-review` branch was fast-forwarded to include this commit. SKILL.
 - The subagent made a commit without explicit user instruction; the user asked not to commit. The commit is preserved on `fix/design-review`, which was later pushed at the owner's request (PR #1).
 - The design revision addresses all 8 findings from `docs/KIRO_DESIGN_REVIEW.md`, but algorithm correctness (symbol alignment, carrier acquisition) is designed, not yet tested with implementation.
 - The `acquireCarrier` function is synchronous and does not support cancellation internally; the worker yields after it completes. If carrier scanning takes too long on slow hardware, cancellation latency may exceed the proposed 250 ms target. This is noted in the design as pending measurement.
+
+---
+
+## Performance measurement — 2026-10-31 (Node on reference device)
+
+**Task:** 25 (measure/record codec performance) and 25.1 (codec buffer-budget instrumentation test).
+
+**Scope and honesty note:** These are **Node measurements**, not browser measurements. They were produced by a plain Node process running the DSP module directly (the DSP is Node-safe by design), via `tests/unit/bench.test.ts`. The 2-second encode/decode targets in Req 13.1 / 13.2 are defined for the **browser codec worker** measured end-to-end from the caller's `postMessage` to the response. A browser benchmark on the reference device's Chrome 155 is therefore **still pending** and is a separate manual step; Node V8 performance differs from the browser, so these numbers are indicative, not a substitute for the browser measurement the requirement targets.
+
+**Environment**
+- Device (per steering): Lenovo LOQ Essential 15IRX11 (model 83SC), Intel Core i5-13450HX, ~14.8 GiB RAM, Ubuntu 26.04 LTS x86_64.
+- Runtime: Node v24.18.0 (`node --version`). Vitest 2.1.4.
+- Payload: maximum 1024-byte binary payload with a 64-byte filename (1104-byte TGHO envelope, the worst case).
+- Method: `performance.now()` deltas, 20 runs each, in-process (no worker, no `postMessage`).
+
+**Measured wall-clock (20 runs, 1024-byte payload)**
+
+| Operation | min | median | mean | max |
+|-----------|-----|--------|------|-----|
+| Encode (`encodeSamples` + `buildWav`) | 81.6 ms | 100.0 ms | 96.8 ms | 111.4 ms |
+| Decode (`parseWav` + `decodeWav`) | 188.6 ms | 203.1 ms | 207.0 ms | 239.7 ms |
+
+**Against the 2-second target (Req 13.1 / 13.2):** In Node, both encode (max 111.4 ms) and decode (max 239.7 ms) are comfortably under the 2000 ms target — roughly 18× and 8× headroom respectively. This is consistent with the earlier `[perf]` round-trip log in `codec-audio.test.ts` (~82 ms combined for a payload without a filename). The target **appears comfortably met in Node, pending browser (Chrome 155) confirmation**. No requirement was relaxed; per Req 13.5, had a target been exceeded it would have been recorded here with the measured value rather than silently changed.
+
+**Codec buffer budget (Req 13.3 — this is a real gate, not just a log)**
+- Maximum envelope: 1104 bytes → encoder output `Int16Array` of 2,183,040 samples (= 240,000 carrier + 1104 × 11 × 160) → **4.16 MiB** codec-owned.
+- WAV container (`buildWav` ArrayBuffer): 44-byte header + samples = **4.16 MiB**.
+- Both are well under the 64 MiB (67,108,864-byte) codec working-buffer budget. The test asserts `samples.length * 2 < 64 MiB` and `wav.byteLength < 64 MiB` for the maximum payload, so a regression that inflated codec allocation would fail the suite.
+
+**Test artifacts**
+- `tests/unit/bench.test.ts` — `[bench]` encode/decode stats (measurement, loose 30 s guard only, not a hard gate) and `[budget]` allocation assertions (hard gate ≤ 64 MiB). Runs in plain Node with no browser globals.
+
+**Still pending**
+- Browser (Chrome 155) end-to-end worker measurement: caller `postMessage` → `encode-result` / `decode-result`, including the worker-internal `wallClockMs` reported in the response. This has not been run yet.
+
+---
+
+## Accessibility check — 2026-10-31
+
+**Task:** 27 (accessibility manual check and fixes). Requirements: Req 12.1–12.10.
+
+**Gap closed this session.** The React components already carried the required
+semantic structure, ARIA roles/live regions, text-plus-icon status labels
+(`✓ Decoded successfully` / `✗ Decode failed`), and a keyboard-operable numeric
+Start/End bit-region selector. However, **no stylesheet existed**, so the
+focus-indicator, 360 px layout, and reduced-motion requirements had no mechanism
+to pass. This session added that mechanism:
+
+- Created `src/index.css` — a minimal, non-decorative accessibility baseline:
+  - `.tg-focusable:focus` / `:focus-visible` → `outline: 2px solid #1a5fb4`
+    (≈ 5.9:1 against white, above the 3:1 non-text-contrast floor; Req 12.2).
+  - `.tg-waveform-canvas:focus` → `outline: 2px solid #ffd21e` (≈ 12:1 against
+    the near-black `#111` canvas background) so the focus ring is visible there.
+  - `box-sizing: border-box` globally, `.tg-app { max-width: 720px }`,
+    full-width inputs/textarea, and `.tg-waveform-canvas { max-width: 100%;
+    height: auto }` so nothing forces horizontal scroll at 360 px (Req 12.7).
+  - Error/warning text `#b3261e` (≈ 5.9:1) and success text `#1b5e20`
+    (≈ 7.4:1) on white — color reinforces, never replaces, the text labels.
+  - `@media (prefers-reduced-motion: reduce)` zeroes all transitions,
+    animations, and smooth scrolling (Req 12.9 / Req 11.5).
+- Imported the stylesheet from `src/main.tsx` (`import './index.css';`).
+
+### Automated accessibility checks — PASS (real, reproducible)
+
+Added `tests/e2e/accessibility.spec.ts` (Playwright, run on **both** Chromium
+and Firefox). All four checks pass on both engines (8/8):
+
+| Check | What it verifies | Result |
+|-------|------------------|--------|
+| Keyboard reachability | Encode textarea, encode file input, decode file input, bit-inspector Start/End inputs, and the action buttons are all reachable by Tab, in top-to-bottom reading order; encode→decode→bit-inspector sequence confirmed | PASS (Chromium + Firefox) |
+| Focus indicator | A focused `.tg-focusable` control reports computed `outline-style ≠ none` and `outline-width ≥ 2px` | PASS |
+| 360 px layout | At a 360 px viewport (with the post-encode waveform + bit table shown) `documentElement.scrollWidth − innerWidth ≤ 1px` | PASS |
+| Reduced motion | With `prefers-reduced-motion: reduce` emulated, the app still renders the main heading (the CSS media query is the real suppression mechanism) | PASS |
+
+Supporting gate checks this session, all exit 0:
+`npm run typecheck` (0), `npm run lint` (0), `npx vite build` (0, CSS bundled),
+`npx vitest run tests/unit/` (140 passed, 1 skipped — the ffprobe-gated WAV test
+skips locally as designed).
+
+These are an **automated supplement, not a replacement** for a full
+accessibility audit. They cover mechanics (reachability, outline geometry,
+overflow, motion suppression) but cannot judge whether the experience is
+actually understandable to an assistive-technology user.
+
+### Still REQUIRES a human — NOT yet performed
+
+Per accessibility steering ("manual check required before release"), the
+following must be done by a person and have **not** been performed:
+
+- **Screen-reader walkthrough** (NVDA on Windows, VoiceOver on macOS, or Orca on
+  Linux): confirm that the encode, decode, success, and error flows are actually
+  announced through the ARIA live regions — `role="status"`/`aria-live="polite"`
+  for success and progress, `role="alert"`/`aria-live="assertive"` for errors —
+  in a way a non-sighted user can follow. Automated emulation does not exercise a
+  real screen reader.
+- **Keyboard-only end-to-end operation by a person**: encode text → play → stop →
+  download WAV → clear → import WAV → decode → verify result → play decoded audio
+  → clear, with no pointing device, confirming each transition is operable and
+  the focus never gets trapped or lost. The automated test proves controls are
+  *reachable*; a human must confirm the full task is *completable* and legible.
+- **Contrast + visible-focus spot check** on real displays, and a
+  `prefers-reduced-motion` toggle check in browser DevTools on the reference
+  device.
+
+### Honesty note
+
+This session does **not** claim WCAG 2.1 AA conformance. It claims that the
+automated subset above (keyboard reachability, ≥ 2 px visible focus outline, no
+360 px horizontal scroll, reduced-motion render) passes reproducibly on Chromium
+and Firefox, and that the manual screen-reader and keyboard-only human audit
+remains **pending** and is a prerequisite before M3/release is marked complete.
+
+### Files changed this session
+
+| File | Action |
+|------|--------|
+| `src/index.css` | Created (accessibility baseline stylesheet) |
+| `src/main.tsx` | Modified (added `import './index.css';` only) |
+| `tests/e2e/accessibility.spec.ts` | Created (4 automated a11y checks × 2 browsers) |
+| `docs/KIRO_USAGE.md` | Modified (this entry) |
