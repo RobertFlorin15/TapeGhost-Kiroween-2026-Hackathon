@@ -446,3 +446,46 @@ remains **pending** and is a prerequisite before M3/release is marked complete.
 | `src/main.tsx` | Modified (added `import './index.css';` only) |
 | `tests/e2e/accessibility.spec.ts` | Created (4 automated a11y checks × 2 browsers) |
 | `docs/KIRO_USAGE.md` | Modified (this entry) |
+
+---
+
+## CI workflow — 2026-10-31
+
+**Task:** 29 (create GitHub Actions CI workflow) and 29.1 (browser-version recording step).
+
+Created `.github/workflows/ci.yml`, a single `build-and-test` job on the `ubuntu-24.04` runner, triggered on push and pull_request against `main`. Node is pinned to 22 via `actions/setup-node@v4` with npm cache; dependencies install with `npm ci` against the committed lockfile.
+
+**Gates the workflow runs, in order:**
+
+1. Install `ffmpeg` (provides `ffprobe`) and verify with `ffprobe -version`.
+2. `npm ci` — install from lockfile.
+3. `npm run typecheck` — strict TypeScript, app + worker tsconfigs.
+4. `npm run lint` — ESLint over `src` and `tests`.
+5. `npm test` — Vitest single-run (unit + property tests).
+6. `npm run build` — dual `tsc --noEmit` + `vite build`.
+7. `npx playwright install --with-deps chromium firefox` — install E2E browsers.
+8. **Record browser versions (sub-task 29.1):** writes `ci-artifacts/browser-versions.txt` with the UTC timestamp, runner label, Playwright version (`npx playwright --version`, which pins the Chromium/Firefox builds), and the ffprobe version line.
+9. `npm run test:e2e` — Playwright on Chromium + Firefox.
+10. Upload `ci-artifacts/` and `playwright-report/` as a build artifact (`if: always()`).
+
+**ffprobe-required policy:** the job sets `env: CI: 'true'`, which activates the CI branch in the `tests/unit/wav.test.ts` ffprobe block — a missing `ffprobe` would fail the suite rather than skip. The workflow installs ffmpeg before the test step, so the policy is enforced, not bypassed.
+
+**Status — PLANNED / UNVERIFIED.** No GitHub Actions run has occurred. The workflow cannot be executed on a real runner locally, so end-to-end behavior (ffmpeg install, Playwright browser install, E2E execution, artifact upload) is unverified until a real CI run completes.
+
+**Local validation performed (no Actions runner involved):**
+
+| Check | Method | Result |
+|-------|--------|--------|
+| `ci.yml` well-formed | `python3` `yaml.safe_load` | YAML OK (1896 bytes) |
+| Referenced scripts exist | Read `package.json` | `typecheck`, `lint`, `test`, `build`, `test:e2e` all present |
+| `npm run typecheck` | Local run | Exit 0 |
+| `npm run lint` | Local run | Exit 0 |
+
+Source and test files were not modified. No push or workflow trigger was attempted.
+
+### Files changed this session
+
+| File | Action |
+|------|--------|
+| `.github/workflows/ci.yml` | Created |
+| `docs/KIRO_USAGE.md` | Modified (this entry) |

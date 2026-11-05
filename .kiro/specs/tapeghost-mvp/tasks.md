@@ -426,7 +426,7 @@ Property-based tests use fast-check with a fixed `const SEED = 42` seed and `num
 
 ### M5 — Release (CI, Deployment, Submission)
 
-- [ ] 29. GitHub Actions CI workflow (`.github/workflows/ci.yml`)
+- [x] 29. GitHub Actions CI workflow (`.github/workflows/ci.yml`)
   - Runner: `ubuntu-24.04`
   - Steps in order:
     1. `actions/checkout@v4`
@@ -454,7 +454,7 @@ Property-based tests use fast-check with a fixed `const SEED = 42` seed and `num
   - Verify: `npm run build` exits 0; URL is publicly accessible and app loads
   - _Requirements: Req 18.1, Req 18.5, Req 18.6_
 
-- [ ] 31. README, LICENSE, and submission materials
+- [x] 31. README, LICENSE, and submission materials
   - Write `LICENSE` with full MIT license text (project name: TapeGhost, copyright year: 2026)
   - Write `README.md` with: project description, install instructions (`npm install`), run instructions (`npm run dev`), test instructions (`npx vitest run`, `npx playwright test`), link to live URL, link to demo video
   - Write `docs/submission/pitch.md`: 250-word pitch describing TapeGhost, its educational value, and how it was built with Kiro

@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-24.04
+    env:
+      CI: 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install ffmpeg (provides ffprobe, required for WAV tests)
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Verify ffprobe is available
+        run: ffprobe -version
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check (strict, app + worker)
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit and property tests (Vitest, single run)
+        run: npm test
+
+      - name: Production build
+        run: npm run build
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium firefox
+
+      - name: Record browser versions
+        run: |
+          mkdir -p ci-artifacts
+          {
+            echo "# Browser versions (recorded at CI time)"
+            echo
+            echo "Date (UTC): $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "Runner: ${{ runner.os }} / ubuntu-24.04"
+            echo
+            echo "## Playwright"
+            npx playwright --version
+            echo
+            echo "## ffprobe"
+            ffprobe -version | head -1
+          } | tee ci-artifacts/browser-versions.txt
+
+      - name: End-to-end tests (Playwright, Chromium + Firefox)
+        run: npm run test:e2e
+
+      - name: Upload CI artifacts (browser versions, reports)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-artifacts
+          path: |
+            ci-artifacts/
+            playwright-report/
+          if-no-files-found: ignore
