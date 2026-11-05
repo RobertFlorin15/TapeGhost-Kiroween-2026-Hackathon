@@ -158,3 +158,37 @@ Main risks: threshold T=1.5 is unmeasured; cancellation 250 ms target is unmeasu
 Owner action: review the revised design document and the Romanian change summary, then approve to proceed to tasks.md.
 
 Estimated owner effort: **10 to 15 minutes** for design revision review.
+
+## Verified progress — 2026-11-02, Europe/Bucharest (implementation M1–M4 complete)
+
+Stage: **M1–M4 implemented and tested; M5 release tasks are owner-dependent.**
+
+Completed this session (Kiro task execution against tasks.md):
+
+- M1 — scaffold + encoder: CRC-32/ISO-HDLC (KAT 0xCBF43926), TGHO envelope serializer, 8N2 framing, FSK encoder (1200/2400 Hz, 160 samples/bit, phase-continuous carrier), WAV builder. Independent signal tests pass.
+- M2 — decoder + round-trip gate: WAV parser (bounded RIFF traversal), envelope parser (11-step validation), decoder (carrier acquisition, symbol alignment over all 160/147 sub-bit offsets, strict 8N2 framing, three-way classifier, CRC verification before success). Seeded PBT round-trips (binary + valid-UTF-8 text), boundary lengths 0/1/255/256/1023/1024, Unicode ă + emoji, independent fixture, CRC-mismatch two-path test.
+- M3 — browser app: async codec worker (yielding scheduler, busy policy, per-request cancel token, internal-error), Web Audio playback (copy-before-decode), React UI (encoding panel, decoding panel, waveform + keyboard-operable bit inspector). E2E round-trip (fresh session) and error paths on Chromium + Firefox.
+- M4 — performance + accessibility: Node benchmarks recorded (encode <112 ms, decode <240 ms max payload; buffer 4.16 MiB); worker cancellation/race E2E; accessibility CSS (focus, 360px, reduced-motion) + automated keyboard/focus/overflow E2E.
+- M5 docs — CI workflow (.github/workflows/ci.yml), README, MIT LICENSE, submission pitch + demo script.
+
+Verification (reproducible, all green locally):
+- `npm run typecheck` → 0; `npm run lint` → 0.
+- `npx vitest run tests/unit/` → 140 passed, 1 skipped (ffprobe-gated WAV test; runs in CI).
+- `npx playwright test` → 24 passed (Chromium 130.0.6723.31 + Firefox 131.x).
+- `npx vite build` → success; worker emitted as its own chunk.
+
+Git: committed on `main` (632c0d0 implementation, plus M5-docs commit). `.kiro/` tracked.
+
+Honest limitations / still pending:
+- Browser (Chrome 155) end-to-end performance benchmark not yet run; Node timings are indicative only.
+- Manual screen-reader + keyboard-only human accessibility walkthrough not yet performed (required before release).
+- Threshold T=1.5 and the 250 ms cancellation target remain labeled proposed/pending measurement.
+- Hook configuration not created (Kiro 1.4.62 schema not yet verified).
+
+Owner actions required for M5 completion (cannot be done by the agent):
+- **Task 30 — Deploy** the `dist/` build to a static host (Cloudflare Pages or equivalent); record the public URL in README and the submission.
+- **Task 32 — Record** the ≤3-minute YouTube demo per `docs/submission/DEMO_SCRIPT.md` and **submit** on Devpost before 2026-12-04 14:00 PST.
+- **Task 33 — M5 checkpoint**: confirm CI green on GitHub, URL live, demo public, submission complete.
+- Push the branch/commits to the public GitHub repository and confirm the first CI run passes.
+
+Estimated owner effort for M5: **45–60 minutes** plus deployment/account setup and video recording.
